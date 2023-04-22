@@ -5,31 +5,37 @@ import './css/styles.css';
 // Business Logic
 
 function getWeather(city) {
-  let request = new XMLHttpRequest();
-  const url = `http://api.openweathermap.org/data/2.5/weather?q=${city}&appid=${process.env.API_KEY}`;
-
-  request.addEventListener("loadend", function() {
-    const response = JSON.parse(this.responseText);
-    if (this.status === 200) {
-      printElements(response, city);
-    } else {
-      printError(this, response, city);
-    }
+  let promise = new Promise(function(resolve, reject) {
+    let request = new XMLHttpRequest();
+    const url = `http://api.openweathermap.org/data/2.5/weather?q=${city}&appid=${process.env.API_KEY}`;
+    request.addEventListener("loadend", function() {
+      const response = JSON.parse(this.responseText);
+      if (this.status === 200) {
+        resolve([response, city]);
+      } else {
+        reject([this, response, city]);
+      }
+    });
+    request.open("GET", url, true);
+    request.send();
   });
 
-  request.open("GET", url, true);
-  request.send();
+  promise.then(function(weatherDataArray) {
+    printElements(weatherDataArray);
+  }, function(errorArray) {
+    printError(errorArray); 
+  });
 }
 
 // UI Logic
 
 function printElements(apiResponse, city) {
-  document.querySelector('#showResponse').innerText = `The humidity in ${city} is ${apiResponse.main.humidity}%. 
-  The temperature in Kelvins is ${apiResponse.main.temp} degrees.`;
-}
+  document.querySelector('#showResponse').innerText = `The humidity in ${data[1]} is ${data[0].main.humidity}%.
+  The temperature in Kelvins is ${data[0].main.temp} degrees.`;
+} 
 
-function printError(request, apiResponse, city) {
-  document.querySelector('#showResponse').innerText = `There was an error accessing the weather data for ${city}: ${request.status} ${request.statusText}: ${apiResponse.message}`;
+function printError(error) {
+  document.querySelector('#showResponse').innerText = `There was an error accessing the weather data for ${error[2]}: ${error[0].status} ${error[0].statusText}: ${error[1].message}`;
 }
 
 function handleFormSubmission(event) {
